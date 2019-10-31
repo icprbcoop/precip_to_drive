@@ -28,15 +28,18 @@ from shutil import copyfile
 maindir = sys.argv[1]
 print (maindir)
 
-#name of the file to be publish
+#name of the file to be published
 ###add list
-drive_file_name1 = "MergeMASP_PRC.csv" 
-drive_file_name2 = "MergeMASP_PRC_weighted.csv" 
+drive_file_list1 = ["MergeMASP_PRC.csv", "MASP_MARFC_PRC.csv", "MASP_NLDAS_PRC.csv", "MASP_HADS_PRC.csv", "MASP_NSSL_PRC.csv"]
+###drive_file_name1 = "MergeMASP_PRC.csv" 
+
+drive_file_list2 = ["MergeMASP_PRC_weighted.csv", "MASP_MARFC_PRC_weighted.csv", "MASP_NLDAS_PRC_weighted.csv", "MASP_HADS_PRC_weighted.csv", "MASP_NSSL_PRC_weighted.csv"]
+###drive_file_name2 = "MergeMASP_PRC_weighted.csv" 
 
 #name of file and directory
 ###add list
-precip_file1 = maindir + "/" + drive_file_name1
-precip_file2 = maindir + "/" + drive_file_name2
+#precip_file1 = maindir + "/" + drive_file_name1
+#precip_file2 = maindir + "/" + drive_file_name2
 #print (precip_file1)
 
 #name of file containing area weight coefficients
@@ -74,63 +77,73 @@ else:
 gauth.SaveCredentialsFile(creds_file)
 
 drive = GoogleDrive(gauth)
-
 #-----------------------------------------------------------------------------
 
-#uplaod original files from FEWS
-###Need to use variable for google folder id###
-file_list = drive.ListFile({'q':"'1pRRs6RcJBSGYTs_epGvkJUcDBXGI7Fcj' in parents and trashed=False"}).GetList()
-try:
-        for file1 in file_list:
-            if file1['title'] == drive_file_name1:
-                file1.Delete()
-                print ("deleted file")                
-except:
-        pass
-f = drive.CreateFile({"parents": [{"kind": "drive#fileLink", "id": fid}]})
-f['title'] = drive_file_name1 # Change title.
-f.SetContentFile(precip_file1)
-f.Upload()
-#-----------------------------------------------------------------------------
 
-#calculate area weighted average precipitation
-list_ = []
 weight = pd.read_csv(weight_file, header=0,  skiprows=[1], sep=',')
-df = pd.read_csv(precip_file1, index_col=0, header=0, skiprows=[1],  sep=',', parse_dates=[0],  date_parser= pd.datetools.to_datetime)
-list_.append(df)
-frame = pd.concat(list_)
-frame[frame == -999] = np.nan
-test1 = frame
-test1.to_csv('out1.csv')
 
-test2 = pd.DataFrame(test1.values*weight.values, columns=test1.columns, index=test1.index)
+for i in  range(5):
+    print (i+1)
 
-test3 = test1
-test3['weight_avg'] = test2.sum(skipna=False,axis=1)
-test3['avg'] = test1.mean(axis=1)
+    drive_file_name1 = drive_file_list1[i]
+    print (drive_file_name1)
+    drive_file_name2 = drive_file_list2[i]
+    precip_file1 = maindir + "/" + drive_file_name1
+    precip_file2 = maindir + "/" + drive_file_name2
+    #uplaod original files from FEWS
+    ###Need to use variable for google folder id###
+    file_list = drive.ListFile({'q':"'1pRRs6RcJBSGYTs_epGvkJUcDBXGI7Fcj' in parents and trashed=False"}).GetList()
+    try:
+            for file1 in file_list:
+                if file1['title'] == drive_file_name1:
+                    file1.Delete()
+                    print ("deleted file")                
+    except:
+            pass
+    f = drive.CreateFile({"parents": [{"kind": "drive#fileLink", "id": fid}]})
+    f['title'] = drive_file_name1 # Change title.
+    f.SetContentFile(precip_file1)
+    f.Upload()
+    #-----------------------------------------------------------------------------
 
-test3.to_csv('out3.csv')
-#-------------------------------------------------------------------------------
+    #calculate area weighted average precipitation
+    list_ = []
+    #weight = pd.read_csv(weight_file, header=0,  skiprows=[1], sep=',')
+    df = pd.read_csv(precip_file1, index_col=0, header=0, skiprows=[1],  sep=',', parse_dates=[0],  date_parser= pd.to_datetime)
+    list_.append(df)
+    frame = pd.concat(list_)
+    frame[frame == -999] = np.nan
+    test1 = frame
+    test1.to_csv('out1.csv')
 
-#upload weight averaged precip
+    test2 = pd.DataFrame(test1.values*weight.values, columns=test1.columns, index=test1.index)
 
-precip_out1 = "out3.csv"
-#save weight averaged file to ICPRB output directory
-copyfile(precip_out1, precip_file2)
-#uplaod original files from FEWS
-###Need to use variable for google folder id###
-file_list = drive.ListFile({'q':"'1pRRs6RcJBSGYTs_epGvkJUcDBXGI7Fcj' in parents and trashed=False"}).GetList()
-try:
-        for file1 in file_list:
-            if file1['title'] == drive_file_name2:
-                file1.Delete()
-                print ("deleted file")                
-except:
-        pass
-f = drive.CreateFile({"parents": [{"kind": "drive#fileLink", "id": fid}]})
-f['title'] = drive_file_name2 # Change title.
-f.SetContentFile(precip_file2)
-f.Upload()
+    test3 = test1
+    test3['weight_avg'] = test2.sum(skipna=False,axis=1)
+    test3['avg'] = test1.mean(axis=1)
+
+    test3.to_csv('out3.csv')
+    #-------------------------------------------------------------------------------
+
+    #upload weight averaged precip
+
+    precip_out1 = "out3.csv"
+    #save weight averaged file to ICPRB output directory
+    copyfile(precip_out1, precip_file2)
+    #uplaod original files from FEWS
+    ###Need to use variable for google folder id###
+    file_list = drive.ListFile({'q':"'1pRRs6RcJBSGYTs_epGvkJUcDBXGI7Fcj' in parents and trashed=False"}).GetList()
+    try:
+            for file1 in file_list:
+                if file1['title'] == drive_file_name2:
+                    file1.Delete()
+                    print ("deleted file")                
+    except:
+            pass
+    f = drive.CreateFile({"parents": [{"kind": "drive#fileLink", "id": fid}]})
+    f['title'] = drive_file_name2 # Change title.
+    f.SetContentFile(precip_file2)
+    f.Upload()
 
 #-------------------------------------------------------------------------------
 
